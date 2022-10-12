@@ -4,8 +4,6 @@ Official implementation of [visual onoma-to-wave]().
 ## Demo
 [[Audio samples]](https://sarulab-speech.github.io/demo_visual-onoma-to-wave/)
 
-The source code and pre-trained model will be available soon.
-
 ## Getting started
 Codes and pre-trained models will be available soon.
 
