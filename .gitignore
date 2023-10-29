@@ -127,3 +127,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# my config
+corpus
+formatted_data
+preprocessed_data
