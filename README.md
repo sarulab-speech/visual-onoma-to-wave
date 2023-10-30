@@ -3,6 +3,9 @@ Official implementation of [visual onoma-to-wave]().
 
 ## Demo
 [[Audio samples]](https://sarulab-speech.github.io/demo_visual-onoma-to-wave/)
+# [ICASSP'23] Visual onoma-to-wave: Environmental sound synthesis from visually represented onomatopoeia
+Official implementation of [Visual onoma-to-wave: environmental sound synthesis from visual onomatopoeias and sound-source images](https://arxiv.org/abs/2210.09173) ( to appear *ICASSP 2023* ) .
+
 
 ## Getting started
 Codes and pre-trained models will be available soon.
