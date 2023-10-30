@@ -54,7 +54,7 @@ python scripts/03_preprocess.py config/preprocess.yaml
 
 
 ## Code contributors
-- Hien Ohnaka (National Institute of Technology, Tokuyama College, Japan.)
+- [Hien Ohnaka](https://sites.google.com/view/ohnakahien/%E3%83%9B%E3%83%BC%E3%83%A0?authuser=4) (National Institute of Technology, Tokuyama College, Japan.)
 - [Shinnosuke Takamichi](https://sites.google.com/site/shinnosuketakamichi/home) (The University of Tokyo, Japan.)
 
 ## Reference
