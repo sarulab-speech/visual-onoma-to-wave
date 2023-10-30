@@ -132,3 +132,4 @@ dmypy.json
 corpus
 formatted_data
 preprocessed_data
+.vscode

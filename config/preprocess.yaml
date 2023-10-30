@@ -20,7 +20,7 @@ preprocessing:
     chara_consecutive_num: 5 # common setting (if no_augment, 0)
     first_consecutive: 0
   image:
-    image_streching: True
+    image_stretching: True
     background_color: [255, 255, 255] # RGB # common setting
     text_color: [0, 0, 0] # RGB # common setting
     pad_color:  0 # common setting

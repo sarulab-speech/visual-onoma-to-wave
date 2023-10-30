@@ -26,13 +26,13 @@ cd ..
 2. download [the RWCP-SSD dataset](https://staff.aist.go.jp/m.goto/RWCP-SSD/eng/index.html). It includes environmental sounds. After downloading, please put the dataset in `./corpus/rwcp-ssd/RWCP-SSD_Vol1/*`.
 
 ### 3. 3-step preprocessing
-1. formatting the datase
+<ins>1. formatting the dataset</ins>
 - `config/preprocess.yaml`: Configuration file for formatting the dataset. Please edit the file according to your environment.
 - `corpus/rwcp-ssd/RWCP-SSD_Vol1`: Path to the RWCP-SSD dataset.
 ```bash
 python scripts/01_format.py config/preprocess.yaml corpus/rwcp-ssd/RWCP-SSD_Vol1
 ```  
-2. lab file to TextGrid file
+<ins>2. lab file to TextGrid file</ins>
 ```bash
 python scripts/02_prepare_tg.py config/preprocess.yaml
 ```
@@ -44,6 +44,11 @@ After this step, the following folder structure is created.
 │       ├── lab
 │       ├── text (onomatopoeia words)
 │       └── TextGrid
+```
+<ins>3. Prepare mel-spectrograms, durations, pitches, and visual onomatopoeias</ins>  
+option::: `--num_workers`: number of workers for multiprocessing. (default: 10)
+```bash
+python scripts/03_preprocess.py config/preprocess.yaml
 ```
 
 
