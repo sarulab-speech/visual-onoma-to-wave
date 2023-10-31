@@ -231,6 +231,9 @@ class Preprocessor:
                 label, filename), mel_spectrogram.T)
         return mel_spectrogram.shape[1], wav_len, len(text)
 
+    def _compute_visualtextinfo(self, wav_len, text_len):
+        pass
+
     def build_from_path(self, num_workers=10):
         if len(self.p_uselabel) != 0:
             self.labels = sorted(list(
@@ -242,6 +245,7 @@ class Preprocessor:
                 set([x.parent.stem for x in (self.path_formatted / "audio").glob("*/*.wav")])
             ))       
         audio_labels = {}
+        width_dumps = {} # {label: character_len_per1sec}
         train_info = []
         dev_test_info = []
         n_frames_cnt = 0
@@ -259,9 +263,8 @@ class Preprocessor:
             # del -1
             mel_lens, wav_lens, text_lens = zip(*results)
             del_idx = np.where(mel_lens==-1)[0]
-            info_list = np.delete(info_list, del_idx)
-            del_count = results[results==-1].shape[0]
-            all = results.shape[0]
-            print(f"label: {label}, del_num/all: {del_count}/{all}")
-            n_frames_cnt += results[results!=-1].sum()
+            all_ = len(info_list)
+            info_list, mel_lens, wav_lens, text_lens = np.delete(info_list, del_idx), np.delete(mel_lens, del_idx), np.delete(wav_lens, del_idx), np.delete(text_lens, del_idx)
+            print(f"label: {label}, del_num/all: {len(del_idx)}/{all_}")
+            n_frames_cnt += mel_lens.sum()
             outer_bar.update(1)
