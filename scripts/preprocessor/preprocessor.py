@@ -181,14 +181,14 @@ class Preprocessor:
         text_base, audio_base, text, _, confidence_score, acceptance_score = line.replace('\n','').split("|")
         # check score border
         if not self._check_score_border(confidence_score, acceptance_score):
-            return -1
+            return -1,-1,-1
         tg_path = os.path.join(
             self.path_formatted, "TextGrid", label, "{}.TextGrid".format(
                 text_base)
         )
         basename = self._get_basename(self.path_font.stem, self.im_fontsize, text_base, ext="")
         if not os.path.exists(tg_path):
-            return -1
+            return -1,-1,-1
         wav_path = os.path.join(self.path_formatted, "audio",
                                 label, "{}.wav".format(audio_base))
         wav, _ = librosa.load(wav_path, sr=22050)
@@ -199,14 +199,15 @@ class Preprocessor:
             sil_margin_frame=self.margin_frame,
         )
         if len(character) != len(text):
-            return -1
+            return -1,-1,-1
         trimed_wav = wav[
             int(self.sampling_rate * start):
         ].astype(np.float32)
+        wav_len = len(trimed_wav)
         if start >= end:
-            return -1
+            return -1,-1,-1
         if len(wav[int(self.sampling_rate * start): int(self.sampling_rate * end)]) < len(wav)/10:
-            return -1
+            return -1,-1,-1
         mel_spectrogram, energy = self._calc_spectrogram(trimed_wav)
         mel_spectrogram = mel_spectrogram[:, : sum(duration)]
         energy = energy[: sum(duration)]
@@ -228,7 +229,7 @@ class Preprocessor:
         # save mel
         np.save(os.path.join(self.path_preprocessed, "mel",
                 label, filename), mel_spectrogram.T)
-        return mel_spectrogram.shape[1]
+        return mel_spectrogram.shape[1], wav_len, len(text)
 
     def build_from_path(self, num_workers=10):
         if len(self.p_uselabel) != 0:
@@ -256,10 +257,11 @@ class Preprocessor:
             )
             results = np.array(results)
             # del -1
-            del_idx = np.where(results==-1)[0]
+            mel_lens, wav_lens, text_lens = zip(*results)
+            del_idx = np.where(mel_lens==-1)[0]
             info_list = np.delete(info_list, del_idx)
             del_count = results[results==-1].shape[0]
             all = results.shape[0]
             print(f"label: {label}, del_num/all: {del_count}/{all}")
             n_frames_cnt += results[results!=-1].sum()
-            outer_bar.update(1)       
+            outer_bar.update(1)
