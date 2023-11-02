@@ -133,3 +133,4 @@ corpus
 formatted_data
 preprocessed_data
 .vscode
+scripts/hifigan
