@@ -63,6 +63,10 @@ class Preprocessor:
         _path.mkdir(parents=True, exist_ok=True)
         _path = self.path_preprocessed / "image" / "width" / label
         _path.mkdir(parents=True, exist_ok=True)
+        _path = self.path_preprocessed / "intermediate" / "info" / "train" / label
+        _path.mkdir(parents=True, exist_ok=True)
+        _path = self.path_preprocessed / "intermediate" / "info" / "val_test" / label
+        _path.mkdir(parents=True, exist_ok=True)
 
     def _check_score_border(self, confidence_score, acceptance_score):
         if float(confidence_score) < self.p_confidence_score_border:
@@ -178,6 +182,13 @@ class Preprocessor:
         with open(os.path.join(self.path_formatted, "dataset_length.json"), "r") as f:
             self.text_length_info = json.load(f)
 
+    def _is_traindata(self, savename):
+        audio_numbering = int(savename.split('-')[2])
+        if audio_numbering not in self.p_untrained_dataid:
+            return True
+        else:
+            return False
+
     def _process(self, label, line):
         text_base, audio_base, text, _, confidence_score, acceptance_score = line.replace('\n','').split("|")
         # check score border
@@ -207,7 +218,7 @@ class Preprocessor:
         wav_len = len(trimed_wav)
         if start >= end:
             return -1,-1,-1
-        if len(wav[int(self.sampling_rate * start): int(self.sampling_rate * end)]) < len(wav)/10:
+        if len(wav[int(self.sampling_rate * start): int(self.sampling_rate * end)]) < len(wav)/15:
             return -1,-1,-1
         mel_spectrogram, energy = self._calc_spectrogram(trimed_wav)
         mel_spectrogram = mel_spectrogram[:, : sum(duration)]
@@ -221,15 +232,23 @@ class Preprocessor:
                     energy[i] = 0
                 pos += d
             energy = energy[: len(duration)]
-        filename = "{}.npy".format(basename)
+        filename = "{}".format(basename)
         np.save(os.path.join(self.path_preprocessed, "duration",
-                label, filename), duration)
+                label, f"{filename}.npy"), duration)
         # save energy
         np.save(os.path.join(self.path_preprocessed, "energy",
-                label, filename), energy)
+                label, f"{filename}.npy"), energy)
         # save mel
         np.save(os.path.join(self.path_preprocessed, "mel",
-                label, filename), mel_spectrogram.T)
+                label, f"{filename}.npy"), mel_spectrogram.T)
+        info = f"{filename}|{label}|{self.im_fontsize}|{self.path_font.stem}|{text}"
+        if self._is_traindata(filename):
+            with open(os.path.join(self.path_preprocessed, "intermediate", "info", "train", label, f"{filename}.txt"), "w") as f:
+                f.write(info)
+        else:
+            with open(os.path.join(self.path_preprocessed, "intermediate", "info", "val_test", label, f"{filename}.txt"), "w") as f:
+                f.write(info)
+
         return mel_spectrogram.shape[1], wav_len, len(text)
 
     def _process_visual_ono(self, label, info, wav_len, Visual_ono_Generator):
@@ -263,6 +282,7 @@ class Preprocessor:
         info_list_list = []
         wav_lens_list = []
         n_frames_cnt = 0
+        print("===Extracting features===")
         outer_bar = tqdm(total=len(self.labels), desc="Extracting", position=0)
         # compute mel-spectrogram, duration, energy
         for i, label in enumerate(self.labels):
@@ -293,6 +313,7 @@ class Preprocessor:
         with open(os.path.join(self.path_preprocessed, "label_width.json"), "w") as f:
             f.write(json.dumps(width_dumps))
         # generate visual onomatopoeia
+        print("===Generating visual onomatopoeia===")
         for i, info_list, wav_lens in zip(range(len(info_list_list)), info_list_list, wav_lens_list):
             label = [k for k, v in audio_labels.items() if v == i][0]
             character_persec, max_width, _ = width_dumps[label]
@@ -300,3 +321,5 @@ class Preprocessor:
             Parallel(n_jobs=num_workers, verbose=1)(
                 delayed(self._process_visual_ono)(label, info, wav_len, Visual_ono_Generator) for info, wav_len in zip(info_list, wav_lens)
             )
+        print("===Done===")
+        return info_list_list, n_frames_cnt

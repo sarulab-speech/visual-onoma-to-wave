@@ -1,6 +1,7 @@
 import argparse
 import yaml
 from preprocessor.preprocessor import Preprocessor
+from preprocessor.augmenter import Augmenter
 
 def load_args():
     parser = argparse.ArgumentParser(
@@ -16,9 +17,8 @@ def load_args():
 
 if __name__ == "__main__":
     args = load_args()
-
     config = yaml.load(open(args.config_path, "r"), Loader=yaml.FullLoader)
-    print("start preprocess.")
-    Preprocessor(config).build_from_path()
-    # print("start augment.")
-    # Augmenter(config).build_from_path()
+    print("=========start preprocess.==============")
+    info_list_list, n_frames_cnt = Preprocessor(config).build_from_path(args.num_workers)
+    print("=========start augment.==============")
+    Augmenter(config).build_from_path(info_list_list, n_frames_cnt, args.num_workers)
