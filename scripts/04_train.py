@@ -88,7 +88,6 @@ def _synth_one_sample(batch, output, configs, use_image, train_logger, step, voc
     log(train_logger, audio=wav_reconstruction, sampling_rate=sampling_rate, tag=f"Training/step_{step}_{tag}_reconst")
     log(train_logger, audio=wav_prediction, sampling_rate=sampling_rate, tag=f"Training/step_{step}_{tag}_synthesis")
 
-
 def main(args, configs):
     print("Prepare training ...")
     preprocess_config, model_config, train_config = configs
