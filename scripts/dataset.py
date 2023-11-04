@@ -126,7 +126,8 @@ class Dataset(Dataset):
         # load image-length
         image_length_path = os.path.join(
             self.preprocessed_path,
-            "image_length",
+            "image",
+            "width",
             audiotype,
             "{}.npy".format(basename),
         )
@@ -136,6 +137,7 @@ class Dataset(Dataset):
         image_path = os.path.join(
             self.preprocessed_path,
             "image",
+            "png",
             audiotype,
             "{}.png".format(basename),
         )
@@ -485,7 +487,8 @@ class TestDataset(Dataset):
                 if self.use_image:
                     image_length_path = os.path.join(
                         self.preprocessed_path,
-                        "image_length",
+                        "image",
+                        "width",
                         audiotype,
                         "{}.npy".format(self.basename[idx]),
                     )
@@ -493,6 +496,7 @@ class TestDataset(Dataset):
                     image_path= os.path.join(
                         self.preprocessed_path,
                         "image",
+                        "png",
                         audiotype,
                         "{}.png".format(self.basename[idx]),
                     )

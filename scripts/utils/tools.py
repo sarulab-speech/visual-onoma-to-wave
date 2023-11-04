@@ -186,10 +186,9 @@ def synth_one_sample(targets, predictions, vocoder, model_config, preprocess_con
     basename = targets[0][0]
     data_name = targets[0][0].split("_")[-1]
     preprocessed_path = preprocess_config["path"]["preprocessed_data_path"]
-    if "Gamesynth" in data_name:
-        label = '_'.join(data_name.split('-')[:-3])
-    else:
-        label = data_name.split("-")[1]
+    with open(os.path.join(preprocessed_path, "audiotype.json")) as f:
+        audio_map = json.load(f)
+        label = [k for k,v in audio_map.items() if v==targets[1][0].item()][0]
     # prepare prediction's data
     src_len = predictions[7][0].item()
     mel_len = predictions[8][0].item()
@@ -208,7 +207,7 @@ def synth_one_sample(targets, predictions, vocoder, model_config, preprocess_con
         if os.path.exists(assess_p):
             input_img = cv2.imread(assess_p, cv2.IMREAD_GRAYSCALE)
         else:
-            image_p = os.path.join(preprocessed_path, "image", label, f"{basename}.png")
+            image_p = os.path.join(preprocessed_path, "image", "png", label, f"{basename}.png")
             input_img = cv2.imread(image_p, cv2.IMREAD_GRAYSCALE)
     
     if preprocess_config["preprocessing"]["energy"]["feature"] == "element_level":
@@ -488,18 +487,6 @@ def synth_for_eval_strech(targets, predictions, vocoder, model_config, preproces
 
 def synth_for_eval_continue(targets, predictions, vocoder, model_config, preprocess_config, synth_savepath):
     basenames = targets[0]
-    id2text = {
-        0:"ベルを鳴らす音",
-        1:"目覚まし時計の音",
-        2:"コーヒー豆を手動ミルで挽く音",
-        3:"カップを叩く音",
-        4:"ドラムを叩く音",
-        5:"マラカスの音",
-        6:"ひげ剃りの動作音",
-        7:"紙を引き裂く音",
-        8:"金属製のゴミ箱を叩く音",
-        9:"笛の音"
-    }
 
     from .model import vocoder_infer
 
@@ -523,8 +510,7 @@ def synth_for_eval_continue(targets, predictions, vocoder, model_config, preproc
         savename = "_".join(basename.split("_")[:-1])
         wavfile.write(os.path.join(synth_savepath, "{}.wav".format(savename)), sampling_rate, wavp)
         raw_text = basename.split("_")[-1]
-        wav_p_len.append( (len(raw_text), len(wavp)/sampling_rate) )
-        statement = id2text[targets[1][0].item()]        
+        wav_p_len.append( (len(raw_text), len(wavp)/sampling_rate) )  
         with open(os.path.join(synth_savepath, "{}_onomatopoeia.txt".format(savename)), "w") as f:
             f.write(raw_text)
         # with open(os.path.join(synth_savepath, "{}_ambientsound.txt".format(savename)), "w") as f:

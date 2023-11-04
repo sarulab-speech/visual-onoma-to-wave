@@ -314,12 +314,24 @@ class Preprocessor:
             f.write(json.dumps(width_dumps))
         # generate visual onomatopoeia
         print("===Generating visual onomatopoeia===")
+        entire_max_width = 0
         for i, info_list, wav_lens in zip(range(len(info_list_list)), info_list_list, wav_lens_list):
             label = [k for k, v in audio_labels.items() if v == i][0]
-            character_persec, max_width, _ = width_dumps[label]
+            character_persec, max_width, min_width = width_dumps[label]
             Visual_ono_Generator = Generator(self.config, character_persec, max_width)
             Parallel(n_jobs=num_workers, verbose=1)(
                 delayed(self._process_visual_ono)(label, info, wav_len, Visual_ono_Generator) for info, wav_len in zip(info_list, wav_lens)
             )
+            entire_max_width = max(entire_max_width, max_width)
+        with open(os.path.join(self.path_preprocessed, "visual_text.json"), "w") as f:
+            stats = {
+                "max_pixelsize": [
+                    int(entire_max_width)
+                ],
+                "height": [
+                    self.im_fontsize
+                ]
+            }
+            f.write(json.dumps(stats))
         print("===Done===")
         return info_list_list, n_frames_cnt

@@ -134,3 +134,4 @@ formatted_data
 preprocessed_data
 .vscode
 scripts/hifigan/generator_universal.pth.tar
+outputs

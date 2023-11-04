@@ -2,7 +2,7 @@ import os
 
 
 def get_symbols(preprocess_path):
-    filenames = ["train.txt", "dev.txt", "test.txt"]
+    filenames = ["train.txt", "val.txt", "test.txt"]
     text_seq = []
     for filename in filenames:
         with open(os.path.join(preprocess_path, filename), "r", encoding="utf-8") as f:
