@@ -15,7 +15,7 @@ from utils.tools import pad_1D, pad_2D,pad_2D_image,pad_2D_gray_image
 
 class Dataset(Dataset):
     def __init__(
-        self, filename, preprocess_config, train_config, sort=False, drop_last=False
+        self, preprocess_config, train_config, filename=None, sort=False, drop_last=False
     ):
         #basic info
         self.dataset_name = preprocess_config["dataset"]
@@ -42,31 +42,29 @@ class Dataset(Dataset):
             self.stride = visual_text_info["max_pixelsize"][0]
 
         #filename equals to "train.txt" in train phase
-        self.basename, self.audiotype, self.fontsize, self.fonttype, self.text = self.process_meta(
-            filename # filename == "train.txt"
-        )
+        if filename is not None:
+            self.basename, self.audiotype, self.fontsize, self.fonttype, self.text = self.process_meta(
+                filename # filename == "train.txt"
+            )
 
         #audiotype id function
         with open(os.path.join(self.preprocessed_path, "audiotype.json")) as f:
             self.audiotype_map = json.load(f)
-        
-
-        self.use_image_encoder = train_config["image_encoder"]
-        if self.use_image_encoder:
-            self.event_image_path = preprocess_config["path"]["event_image_path"]
-            self.event_img_list = []
-            for i in range(len(self.audiotype_map)):
-                label = [k for k, v in self.audiotype_map.items() if v == i][0]
-                event_image_path = os.path.join(self.event_image_path, label)
-                aa = os.listdir(event_image_path)
-                event_image_paths = [ 
-                    os.path.join(event_image_path,f) for f in aa
-                    if os.path.isfile(os.path.join(event_image_path,f)) and os.path.splitext(f)[1] in ['.npy'] 
-                ]
-                self.event_img_list.append(event_image_paths)
-        else:
-            self.event_image_path = None
-    end=None
+        # self.use_image_encoder = train_config["image_encoder"]
+        # if self.use_image_encoder:
+        #     self.event_image_path = preprocess_config["path"]["event_image_path"]
+        #     self.event_img_list = []
+        #     for i in range(len(self.audiotype_map)):
+        #         label = [k for k, v in self.audiotype_map.items() if v == i][0]
+        #         event_image_path = os.path.join(self.event_image_path, label)
+        #         aa = os.listdir(event_image_path)
+        #         event_image_paths = [ 
+        #             os.path.join(event_image_path,f) for f in aa
+        #             if os.path.isfile(os.path.join(event_image_path,f)) and os.path.splitext(f)[1] in ['.npy'] 
+        #         ]
+        #         self.event_img_list.append(event_image_paths)
+        # else:
+        #     self.event_image_path = None
 
         
 
@@ -150,11 +148,11 @@ class Dataset(Dataset):
         
         image = self.character_padding_forinput(image, image_length)
 
-        if self.use_image_encoder:
-            event_img_feature_path = random.choice(self.event_img_list[audiotype_id])
-            event_img_feature = np.load(event_img_feature_path)
-        else:
-            event_img_feature = None
+        # if self.use_image_encoder:
+        #     event_img_feature_path = random.choice(self.event_img_list[audiotype_id])
+        #     event_img_feature = np.load(event_img_feature_path)
+        # else:
+        #     event_img_feature = None
         sample = {
             "id": basename,
             "audiotype": audiotype_id,
@@ -163,7 +161,7 @@ class Dataset(Dataset):
             "energy": energy,
             "duration": duration,
             "image":image,
-            "event_image_feature" : event_img_feature
+            "event_image_feature" : None
         }
 
         return sample

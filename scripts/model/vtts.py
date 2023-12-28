@@ -68,11 +68,12 @@ class vTTS(nn.Module):
     ):
 
         src_masks = get_mask_from_lengths(src_lens, max_src_len)
-        mel_masks = (
-            get_mask_from_lengths(mel_lens, max_mel_len)
-            if mel_lens is not None
-            else None
-        )
+        if mels is not None:
+            mel_masks = (
+                get_mask_from_lengths(mel_lens, max_mel_len)   
+            )
+        else:
+            mel_masks = None
         output = self.encoder(texts, src_masks,images=images,use_image=use_image)
 
         if self.use_jdit:

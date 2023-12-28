@@ -45,7 +45,7 @@ def _init_dataset(preprocess_config, train_config):
 
 def _init_model(args, configs):
     preprocess_config, model_config, train_config = configs
-    model, optimizer = get_model(args, configs, device, train=True)
+    model, optimizer = get_model(args.restore_step, configs, device, train=True)
     Loss = FastSpeech2Loss(preprocess_config, model_config).to(device)
     model = nn.DataParallel(model) if train_config["dataparallel"] else model
     num_param = get_param_num(model)

@@ -1,7 +1,5 @@
 import os
 import json
-import re
-
 import torch
 import torch.nn.functional as F
 import numpy as np
@@ -136,8 +134,6 @@ def to_device_synth(data, device):
         )
         )
 
-
-
 def log(
     logger, step=None, losses=None, fig=None, audio=None, image=None, sampling_rate=22050, tag=""
 ):
@@ -161,7 +157,6 @@ def log(
             sample_rate=sampling_rate,
         )
 
-
 def get_mask_from_lengths(lengths, max_len=None):
     batch_size = lengths.shape[0]
     if max_len is None:
@@ -172,17 +167,13 @@ def get_mask_from_lengths(lengths, max_len=None):
 
     return mask
 
-
 def expand(values, durations):
     out = list()
     for value, d in zip(values, durations):
         out += [value] * max(0, int(d))
     return np.array(out)
 
-
 def synth_one_sample(targets, predictions, vocoder, model_config, preprocess_config, use_image=True):
-    """
-    """
     basename = targets[0][0]
     data_name = targets[0][0].split("_")[-1]
     preprocessed_path = preprocess_config["path"]["preprocessed_data_path"]
@@ -441,18 +432,6 @@ def synth_for_eval(targets, predictions, vocoder, model_config, preprocess_confi
 
 def synth_for_eval_strech(targets, predictions, vocoder, model_config, preprocess_config, synth_savepath):
     basenames = targets[0]
-    id2text = {
-        0:"ベルを鳴らす音",
-        1:"目覚まし時計の音",
-        2:"コーヒー豆を手動ミルで挽く音",
-        3:"カップを叩く音",
-        4:"ドラムを叩く音",
-        5:"マラカスの音",
-        6:"ひげ剃りの動作音",
-        7:"紙を引き裂く音",
-        8:"金属製のゴミ箱を叩く音",
-        9:"笛の音"
-    }
 
     from .model import vocoder_infer
 
@@ -477,8 +456,6 @@ def synth_for_eval_strech(targets, predictions, vocoder, model_config, preproces
         wavfile.write(os.path.join(synth_savepath, "{}.wav".format(savename)), sampling_rate, wavp)
         wav_p_len.append( (int(basename.split("_")[-2]), len(wavp)/sampling_rate) )
         raw_text = basename.split("_")[-1]
-        statement = id2text[targets[1][0].item()]
-        
         with open(os.path.join(synth_savepath, "{}_onomatopoeia.txt".format(savename)), "w") as f:
             f.write(raw_text)
         # with open(os.path.join(synth_savepath, "{}_ambientsound.txt".format(savename)), "w") as f:
