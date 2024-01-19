@@ -1,0 +1,25 @@
+path:
+  ckpt_path: "./outputs/RWCP-SSD/pretrained/ckpt" 
+  log_path: "./outputs/RWCP-SSD/pretrained/log"
+  result_path: "./outputs/RWCP-SSD/pretrained/result"
+optimizer:
+  batch_size: 16 # common setting
+  betas: [0.9, 0.98] # common setting
+  eps: 0.000000001 # common setting
+  weight_decay: 0.0 # common setting
+  grad_clip_thresh: 1.0 # common setting
+  grad_acc_step: 1 # common setting
+  warm_up_step: 4000 # common setting
+  anneal_steps: [300000, 400000, 500000] # common setting
+  anneal_rate: 0.3 # common setting
+  init_lr: 0.001 # common setting
+step:
+  total_step: 200000 # common setting
+  log_step: 100 # common setting
+  synth_step: 1000 # common setting
+  val_step: 1000 # common setting
+  save_step: 10000 # common setting
+dataparallel: False # common setting
+
+use_image: True # if katakana_id or phoneme_id, False
+image_encoder: False # if katakana_id or phoneme_id, False

@@ -1,0 +1,13 @@
+gdown
+pyyaml
+pydub
+numpy
+scipy
+torch
+torchvision
+torchaudio
+opencv-python
+matplotlib
+librosa
+wheel
+pyworld

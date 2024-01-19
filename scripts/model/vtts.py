@@ -10,7 +10,7 @@ from transformer import Encoder, Decoder, PostNet
 from .modules import VarianceAdaptor
 from utils.tools import get_mask_from_lengths
 from .jdit import JDIT
-import clip
+# import clip
 
 
 class vTTS(nn.Module):

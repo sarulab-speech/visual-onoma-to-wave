@@ -12,7 +12,7 @@ import torchvision.transforms as transforms
 import audio as Audio
 import cv2
 import io
-import clip
+# import clip
 from PIL import Image
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
