@@ -1,13 +1,24 @@
 # [ICASSP'23] Visual onoma-to-wave: Environmental sound synthesis from visually represented onomatopoeia
-Official implementation of [Visual onoma-to-wave: environmental sound synthesis from visual onomatopoeias and sound-source images](https://arxiv.org/abs/2210.09173) ( to appear *ICASSP 2023* ) .
+Official implementation of Visual onoma-to-wave: environmental sound synthesis from visual onomatopoeias and sound-source images ([arxiv](https://arxiv.org/abs/2210.09173), [IEEE Xplore](https://ieeexplore.ieee.org/document/10096517)).
+Currently, the model of class conditioning by sound source image is not available, and only the model of visual onomatopoeia + sound source image id is available.
+
+
 
 ## Demo
 [[Audio samples]](https://sarulab-speech.github.io/demo_visual-onoma-to-wave/)
 
 
-
 ## Quick start
-Codes and pre-trained models will be available soon.
+First, run setup.sh.
+This will automatically download the pre-trained model.
+```bash
+bash setup.sh
+```
+Then, run the following command to install the dependencies.
+```bash
+pip install -r requirements.txt
+```
+Now you can run the script in prediction.ipynb.
 
 ## Getting started
 ### 1. Install dependencies
@@ -45,10 +56,15 @@ After this step, the following folder structure is created.
 │       ├── text (onomatopoeia words)
 │       └── TextGrid
 ```
-<ins>3. Prepare mel-spectrograms, durations, pitches, and visual onomatopoeias</ins>  
+<ins>3. Prepare mel-spectrograms, durations, energies, and visual onomatopoeias</ins>  
 option::: `--num_workers`: number of workers for multiprocessing. (default: 10)
 ```bash
-python scripts/03_preprocess.py config/preprocess.yaml
+python scripts/03_preprocess.py config/ICASSP/preprocess.yaml
+```
+
+<ins>4. Train the model</ins>
+```bash
+python scripts/04_train.py -t config/ICASSP/train.yaml -p config/ICASSP/preprocess.yaml -m config/ICASSP/model.yaml
 ```
 
 
