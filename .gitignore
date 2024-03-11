@@ -138,6 +138,6 @@ preprocessed_data/RWCP-SSD/latest/mel
 preprocessed_data/RWCP-SSD/latest/kurtosis
 .vscode
 scripts/hifigan/generator_universal.pth.tar
-outputs/RWCP-SSD/result/*
-outputs/RWCP-SSD/ckpt/*
-outputs/RWCP-SSD/log/*
+outputs/RWCP-SSD/latest/result/*
+outputs/RWCP-SSD/latest/ckpt/*
+outputs/RWCP-SSD/latest/log/*
