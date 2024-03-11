@@ -2,6 +2,9 @@
 Official implementation of Visual onoma-to-wave: environmental sound synthesis from visual onomatopoeias and sound-source images ([arxiv](https://arxiv.org/abs/2210.09173), [IEEE Xplore](https://ieeexplore.ieee.org/document/10096517)).
 Currently, the model of class conditioning by sound source image is not available, and only the model of visual onomatopoeia + sound source image id is available.
 
+![img1](sample/concept_paper.png)
+![img2](sample/prop_architecture.png)
+
 
 
 ## Demo
@@ -9,16 +12,18 @@ Currently, the model of class conditioning by sound source image is not availabl
 
 
 ## Quick start
-First, run setup.sh.
-This will automatically download the pre-trained model.
-```bash
-bash setup.sh
-```
-Then, run the following command to install the dependencies.
+First, run the following command to install the dependencies.
 ```bash
 pip install -r requirements.txt
 ```
+Then,run setup.sh.
+This will automatically download the pre-trained model.
+```bash
+bash setup.sh
+``` 
 Now you can run the script in prediction.ipynb.
+
+![demo](sample/synthesize_sample.gif)
 
 ## Getting started
 ### 1. Install dependencies

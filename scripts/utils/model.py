@@ -16,7 +16,7 @@ def get_model(restore_step, configs, device, train=False):
             train_config["path"]["ckpt_path"],
             "{}.pth.tar".format(restore_step),
         )
-        ckpt = torch.load(ckpt_path)
+        ckpt = torch.load(ckpt_path, map_location=device)
         model.load_state_dict(ckpt["model"])
 
     if train:
@@ -59,9 +59,9 @@ def get_vocoder(config, device):
         config = hifigan.AttrDict(config)
         vocoder = hifigan.Generator(config)
         if speaker == "LJSpeech":
-            ckpt = torch.load("scripts/hifigan/generator_LJSpeech.pth.tar")
+            ckpt = torch.load("scripts/hifigan/generator_LJSpeech.pth.tar", map_location=device)
         elif speaker == "universal":
-            ckpt = torch.load("scripts/hifigan/generator_universal.pth.tar")
+            ckpt = torch.load("scripts/hifigan/generator_universal.pth.tar", map_location=device)
         vocoder.load_state_dict(ckpt["generator"])
         vocoder.eval()
         vocoder.remove_weight_norm()
