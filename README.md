@@ -72,7 +72,26 @@ python scripts/03_preprocess.py config/ICASSP/preprocess.yaml
 python scripts/04_train.py -t config/ICASSP/train.yaml -p config/ICASSP/preprocess.yaml -m config/ICASSP/model.yaml
 ```
 
-
+## Citation
+```bash
+@inproceedings{visual_onoma2wave,
+  author={
+    Ohnaka, Hien and 
+    Takamichi, Shinnosuke and 
+    Imoto, Keisuke and 
+    Okamoto, Yuki and 
+    Fujii, Kazuki and 
+    Saruwatari, Hiroshi
+  },
+  booktitle={ICASSP 2023 - 2023 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}, 
+  title={Visual Onoma-to-Wave: Environmental Sound Synthesis from Visual Onomatopoeias and Sound-Source Images}, 
+  year={2023},
+  volume={},
+  number={},
+  pages={1-5},
+  doi={10.1109/ICASSP49357.2023.10096517}
+}
+```
 
 ## Code contributors
 - [Hien Ohnaka](https://sites.google.com/view/ohnakahien/%E3%83%9B%E3%83%BC%E3%83%A0?authuser=4) (National Institute of Technology, Tokuyama College, Japan.)
