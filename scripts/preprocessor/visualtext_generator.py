@@ -9,7 +9,6 @@ class Generator:
         self.im_is_stretching = config_dict["visual_text"]["image_stretching"]
         self.im_bgcolor = tuple(config_dict["visual_text"]["color"]["background"])
         self.im_txtcolor = tuple(config_dict["visual_text"]["color"]["text"])
-        self.im_padcolor = tuple(config_dict["visual_text"]["color"]["pad"])
         self.im_loadscale = config_dict["visual_text"]["scale_in_training"]
 
     def __init__(self, config, chara_persec, max_width):

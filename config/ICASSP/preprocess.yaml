@@ -20,7 +20,6 @@ visual_text:
   color:
     background: [255, 255, 255]
     text: [0, 0, 0]
-    pad: [0, 0, 0]
   scale_in_training: "gray-scale"
 
 audio:

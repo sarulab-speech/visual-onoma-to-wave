@@ -39,7 +39,6 @@ class Dataset(Dataset):
             self.text_font_size = preprocess_config["visual_text"]["fontsize"]
             self.image_bgcolor = preprocess_config["visual_text"]["color"]["background"]
             self.image_textcolor = preprocess_config["visual_text"]["color"]["text"]
-            self.image_padcolor = preprocess_config["visual_text"]["color"]["pad"]
             self.image_loadscale = preprocess_config["visual_text"]["scale_in_training"]
             with open(self.preprocessed_path/"visual_text.json") as f:
                 visual_text_info = json.load(f)
@@ -289,7 +288,6 @@ class TestDataset(Dataset):
             self.text_font_name = preprocess_config["preprocessing"]["text"]["font_size"]
             self.image_bgcolor = preprocess_config["preprocessing"]["image"]["background_color"]
             self.image_textcolor = preprocess_config["preprocessing"]["image"]["text_color"]
-            self.image_padcolor = preprocess_config["preprocessing"]["image"]["pad_color"]
             self.image_loadscale = preprocess_config["preprocessing"]["image"]["load_scale"]
             with open(os.path.join(preprocess_config["path"]["preprocessed_data_path"], "visual_text.json")) as f:
                 visual_text_info = json.load(f)
@@ -475,7 +473,6 @@ class TestDataset_img(Dataset):
             self.text_font_name = preprocess_config["preprocessing"]["text"]["font_size"]
             self.image_bgcolor = preprocess_config["preprocessing"]["image"]["background_color"]
             self.image_textcolor = preprocess_config["preprocessing"]["image"]["text_color"]
-            self.image_padcolor = preprocess_config["preprocessing"]["image"]["pad_color"]
             self.image_loadscale = preprocess_config["preprocessing"]["image"]["load_scale"]
             with open(os.path.join(preprocess_config["path"]["preprocessed_data_path"], "visual_text.json")) as f:
                 visual_text_info = json.load(f)

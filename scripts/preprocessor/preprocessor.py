@@ -184,7 +184,6 @@ class Preprocessor:
         self.im_is_stretching = config_dict["visual_text"]["image_stretching"]
         self.im_bgcolor = config_dict["visual_text"]["color"]["background"]
         self.im_txtcolor = config_dict["visual_text"]["color"]["text"]
-        self.im_padcolor = config_dict["visual_text"]["color"]["pad"]
         self.im_loadscale = config_dict["visual_text"]["scale_in_training"]
 
         # audio
