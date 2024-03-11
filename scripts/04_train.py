@@ -2,7 +2,6 @@ import argparse
 import os
 
 import torch
-from torch.nn.parallel.data_parallel import data_parallel
 import yaml
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -10,16 +9,24 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from utils.model import get_model, get_vocoder, get_param_num
-from utils.tools import to_device, log, synth_one_sample, plot_alignment_to_numpy
+from utils.tools import to_device, log, synth_one_sample
 from model import FastSpeech2Loss
 from dataset import Dataset
 from scipy.io.wavfile import write
 from evaluate import evaluate
-import audio as Audio
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def _init_logger(train_config):
+    """ Initialize logger and output folders.
+    Args:
+        train_config (dict): Configuration of training.
+    Returns:
+        SummaryWriter: Logger for train.
+        SummaryWriter: Logger for validation.
+        str: Path to train log.
+        str: Path to validation log.
+    """
     for p in train_config["path"].values():
         os.makedirs(p, exist_ok=True)
     os.makedirs(os.path.join(train_config["path"]["result_path"], "Train"), exist_ok=True)
@@ -29,8 +36,16 @@ def _init_logger(train_config):
     return SummaryWriter(train_log_path), SummaryWriter(val_log_path), train_log_path, val_log_path
 
 def _init_dataset(preprocess_config, train_config):
+    """ Initialize dataset and data loader.
+    Args:
+        preprocess_config (dict): Configuration of preprocess.
+        train_config (dict): Configuration of training.
+    Returns:
+        Dataset: Dataset for training.
+        DataLoader: DataLoader for training.
+    """
     dataset = Dataset(
-        "train.txt", preprocess_config, train_config, sort=True, drop_last=True
+        "train.txt", preprocess_config, train_config, model_config, sort=True, drop_last=True
     )
     group_size = 4
     loader = DataLoader(
@@ -44,9 +59,19 @@ def _init_dataset(preprocess_config, train_config):
     return dataset, loader
 
 def _init_model(args, configs):
+    """ Initialize model and optimizer.
+    Args:
+        args (Namespace): Input arguments.
+        configs (tuple): Preprocess, model and train configuration. (preprocess_config, model_config, train_config)
+    Returns:
+        nn.Module: Model for training.
+        nn.Module: Optimizer for training.
+        nn.Module: Loss function for training.
+        nn.Module: Vocoder for evaluation. (not for training)
+    """
     preprocess_config, model_config, train_config = configs
     model, optimizer = get_model(args.restore_step, configs, device, train=True)
-    Loss = FastSpeech2Loss(preprocess_config, model_config).to(device)
+    Loss = FastSpeech2Loss().to(device)
     model = nn.DataParallel(model) if train_config["dataparallel"] else model
     num_param = get_param_num(model)
     vocoder = get_vocoder(model_config, device)
@@ -78,11 +103,10 @@ def _synth_one_sample(batch, output, configs, use_image, train_logger, step, voc
         output,
         vocoder,
         model_config,
-        preprocess_config,
-        use_image,
+        preprocess_config
     )
     log(train_logger, image=im, tag=f"Training/step_{step}_{tag}")
-    sampling_rate = preprocess_config["preprocessing"]["audio"]["sampling_rate"]
+    sampling_rate = preprocess_config["audio"]["sampling_rate"]
     write(os.path.join(train_config["path"]["result_path"], "Train", f"{step}_{tag}_reconst.wav"), sampling_rate, wav_reconstruction)
     write(os.path.join(train_config["path"]["result_path"], "Train", f"{step}_{tag}_synthesis.wav"), sampling_rate, wav_prediction)
     log(train_logger, audio=wav_reconstruction, sampling_rate=sampling_rate, tag=f"Training/step_{step}_{tag}_reconst")
@@ -119,7 +143,7 @@ def main(args, configs):
                 if step % Y.log_step == 0:
                     losses = [l.item() for l in losses]
                     message1 = "Step {}/{}, ".format(step, Y.total_step)
-                    message2 = "Total Loss: {:.4f}, Mel Loss: {:.4f}, Mel PostNet Loss: {:.4f}, Energy Loss: {:.4f}, Duration Loss: {:.4f}".format(*losses)
+                    message2 = "Total Loss: {:.4f}, Mel Loss: {:.4f}, Mel PostNet Loss: {:.4f}, Energy Loss: {:.4f}, Kurt Loss: {:.4f}, Duration Loss: {:.4f}".format(*losses)
                     with open(os.path.join(train_log_path, "log.txt"), "a") as f_log:
                         f_log.write(message1 + message2 + "\n")
                     Y.outer_bar.write(message1 + message2)

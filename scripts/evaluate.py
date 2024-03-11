@@ -22,7 +22,7 @@ def evaluate(model, step, configs, logger=None, vocoder=None):
 
     # Get dataset
     dataset = Dataset(
-        "val.txt", preprocess_config, train_config, sort=False, drop_last=False
+        "val.txt", preprocess_config, train_config, model_config, sort=False, drop_last=False
     )
     batch_size = train_config["optimizer"]["batch_size"]
     loader = DataLoader(
@@ -33,7 +33,7 @@ def evaluate(model, step, configs, logger=None, vocoder=None):
     )
 
     # Get loss function
-    Loss = FastSpeech2Loss(preprocess_config, model_config).to(device)
+    Loss = FastSpeech2Loss().to(device)
 
     # Evaluation
     loss_sums = [0 for _ in range(6)]
@@ -61,8 +61,7 @@ def evaluate(model, step, configs, logger=None, vocoder=None):
             output,
             vocoder,
             model_config,
-            preprocess_config,
-            use_image
+            preprocess_config
         )
 
         log(logger, step, losses=loss_means)
@@ -71,7 +70,7 @@ def evaluate(model, step, configs, logger=None, vocoder=None):
             image=im,
             tag="Validation/step_{}_{}".format(step, tag),
         )
-        sampling_rate = preprocess_config["preprocessing"]["audio"]["sampling_rate"]
+        sampling_rate = preprocess_config["audio"]["sampling_rate"]
         write(
             os.path.join(
             train_config["path"]["result_path"],

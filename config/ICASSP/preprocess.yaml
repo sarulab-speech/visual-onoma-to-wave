@@ -1,0 +1,48 @@
+path:
+  corpus: "./corpus/RWCP-SSD"
+  formatted: "./formatted_data/RWCP-SSD"
+  preprocessed: "./preprocessed_data/RWCP-SSD/latest"
+  font: "./font/ipaexg00401/ipaexg.ttf"
+
+dataset:
+  name: "rwcp-ssd"
+  extract_labels: ['coffmill', 'cup1', 'clock1', 'whistle3', 'maracas', 'drum', 'shaver', 'trashbox', 'tear', 'bells5']
+  valtest_id: [13, 33, 53, 73, 93]
+  confidence_score_border: 3
+  acceptance_score_border: 2.5
+
+input_type: "visual-text"
+
+visual_text:
+  fontsize: 24
+  stride: 1
+  image_stretching: True
+  color:
+    background: [255, 255, 255]
+    text: [0, 0, 0]
+    pad: [0, 0, 0]
+  scale_in_training: "gray-scale"
+
+audio:
+  sampling_rate: 22050
+  max_wav_value: 32768.0
+  stft:
+    filter_length: 1024
+    hop_length: 256
+    win_length: 1024
+    margin_frame: 5
+  mel:
+    n_mel_channels: 80
+    mel_fmin: 0
+    mel_fmax: 8000
+  feature:
+    energy:
+      normalization: True
+    kurtosis:
+      normalization: True
+
+augmentation:
+  max_length: 7
+  repeat_num: 3
+  consecutive_num: 5
+  first_consecutive: 0

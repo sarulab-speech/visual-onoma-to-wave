@@ -131,14 +131,13 @@ dmypy.json
 # my config
 corpus
 formatted_data
-preprocessed_data/RWCP-SSD/duration
-preprocessed_data/RWCP-SSD/energy
-preprocessed_data/RWCP-SSD/image
-preprocessed_data/RWCP-SSD/mel
-preprocessed_data/RWCP-SSD/train.txt
-preprocessed_data/RWCP-SSD/val.txt
+preprocessed_data/RWCP-SSD/latest/duration
+preprocessed_data/RWCP-SSD/latest/energy
+preprocessed_data/RWCP-SSD/latest/image
+preprocessed_data/RWCP-SSD/latest/mel
+preprocessed_data/RWCP-SSD/latest/kurtosis
 .vscode
 scripts/hifigan/generator_universal.pth.tar
-outputs/RWCP-SSD/result/*
-outputs/RWCP-SSD/ckpt/*
-outputs/RWCP-SSD/log/*
+outputs/RWCP-SSD/latest/result/*
+outputs/RWCP-SSD/latest/ckpt/*
+outputs/RWCP-SSD/latest/log/*

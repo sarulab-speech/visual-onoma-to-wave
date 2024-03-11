@@ -48,11 +48,11 @@ class VisualFeatureExtractor(nn.Module):
 
         if self.bridge_relu:
             self.bridge = nn.Sequential(
-                nn.Linear(slice_width * slice_height * self.dim3, embed_dim),
+                nn.Linear(slice_width*stride * slice_height * self.dim3, embed_dim),
                 nn.ReLU(inplace=True)
             )
         else:
-            self.bridge = nn.Linear(slice_width * slice_height * self.dim3, embed_dim)
+            self.bridge = nn.Linear(slice_width*stride * slice_height * self.dim3, embed_dim)
 
         for param in self.parameters():
             torch.nn.init.uniform_(param, -0.08, 0.08)
@@ -64,8 +64,9 @@ class VisualFeatureExtractor(nn.Module):
         image_slice=[]
         for image in images:
             tensors = []
-            for i in range(0,width-1,self.stride):
-                slice_tensor = image[:,:,i:i+self.stride]
+            chara_num = (width-(self.stride//2)*self.slice_width*2)/self.slice_width
+            for i in range(int(chara_num)):
+                slice_tensor = image[:,:,i*self.slice_width:i*self.slice_width+self.slice_width*self.stride]
                 tensors.append(slice_tensor)
             image_slice.append(torch.stack(tensors))
         image_slice=torch.stack(image_slice)

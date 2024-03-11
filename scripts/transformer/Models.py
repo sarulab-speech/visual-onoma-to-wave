@@ -38,11 +38,9 @@ class Encoder(nn.Module):
 
     def __init__(self, preprocess_config,model_config):
         super(Encoder, self).__init__()
-
-        self.input_type = preprocess_config["preprocessing"]["input_type"]
-
+        self.input_type = preprocess_config["input_type"]
         n_position = model_config["max_seq_len"] + 1
-        n_src_vocab = len(get_symbols(preprocess_config["path"]["preprocessed_data_path"])) + 1
+        n_src_vocab = len(get_symbols(preprocess_config["path"]["preprocessed"])) + 1
         d_word_vec = model_config["transformer"]["encoder_hidden"]
         n_layers = model_config["transformer"]["encoder_layer"]
         n_head = model_config["transformer"]["encoder_head"]
@@ -57,12 +55,12 @@ class Encoder(nn.Module):
 
         # 複数フォントサイズにはまだ対応していない
         if self.input_type == "visual-text":
-            with open(os.path.join(preprocess_config["path"]["preprocessed_data_path"], "visual_text.json")) as f:
+            with open(os.path.join(preprocess_config["path"]["preprocessed"], "visual_text.json")) as f:
                 visual_text_info = json.load(f)
             width = visual_text_info["max_pixelsize"][0]
             height = visual_text_info["height"][0]
-            stride = visual_text_info["max_pixelsize"][0]
-            load_scale = preprocess_config["preprocessing"]["image"]["load_scale"]
+            stride = preprocess_config["visual_text"]["stride"]
+            load_scale = preprocess_config["visual_text"]["scale_in_training"]
             VFE_kernelsize = model_config["visual_feature_extractor"]["conv_kernel_size"]
             VFE_layer_num = model_config["visual_feature_extractor"]["layer_num"]
             self.VisualFeatureExtractor=VisualFeatureExtractor(

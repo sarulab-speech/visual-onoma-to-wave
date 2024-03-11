@@ -12,11 +12,9 @@ import torchvision.transforms as transforms
 import audio as Audio
 import cv2
 import io
-import clip
-from PIL import Image
+from pathlib import Path
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 transform = transforms.Compose(
     [transforms.ToTensor()]
 )
@@ -32,28 +30,30 @@ def to_device(data, device):
         mel_lens,
         max_mel_len,
         energies,
+        kurtosises,
         durations,
         images,
         event_image_features
     ) = data
-
     audiotypes = torch.from_numpy(audiotypes).long().to(device)
     src_lens = torch.from_numpy(src_lens).to(device)
     if mels is not None:
-        mels = torch.from_numpy(mels).float().to(device)
+        mels = torch.from_numpy(mels).float().float().to(device)
     if mel_lens is not None:
-        mel_lens = torch.from_numpy(mel_lens).to(device)
+        mel_lens = torch.from_numpy(mel_lens).float().to(device)
     if energies is not None:
-        energies = torch.from_numpy(energies).to(device)
+        energies = torch.from_numpy(energies).float().to(device)
+    if kurtosises is not None:
+        kurtosises = torch.from_numpy(kurtosises).float().to(device)
     if durations is not None:
-        durations = torch.from_numpy(durations).long().to(device)
+        durations = torch.from_numpy(durations).float().to(device)
     if images is not None:
         images=torch.stack([transform(im) for im in images]).to(device)
     if event_image_features[0] is not None:
-        event_image_features = torch.from_numpy(event_image_features).to(device)
+        event_image_features = torch.from_numpy(event_image_features).float().to(device)
     else:
         event_image_features=None
-    texts=torch.from_numpy(texts).long().to(device)
+    texts=torch.from_numpy(texts).to(device)
 
     return (
             ids,
@@ -65,6 +65,7 @@ def to_device(data, device):
             mel_lens,
             max_mel_len,
             energies,
+            kurtosises,
             durations,
             images,
             event_image_features
@@ -81,11 +82,11 @@ def to_device_synth(data, device):
         mel_lens,
         max_mel_len,
         energies,
+        kurtosises,
         durations,
         images,
         event_image_features
     ) = data
-
     audiotypes = torch.from_numpy(audiotypes).long().to(device)
     src_lens = torch.from_numpy(src_lens).to(device)
     if mels is not None:
@@ -94,6 +95,8 @@ def to_device_synth(data, device):
         mel_lens = torch.from_numpy(mel_lens).to(device)
     if energies is not None:
         energies = torch.from_numpy(energies).to(device)
+    if kurtosises is not None:
+        kurtosises = torch.from_numpy(kurtosises).to(device)
     if durations is not None:
         durations = torch.from_numpy(durations).long().to(device)
     if images is not None:
@@ -142,7 +145,8 @@ def log(
         logger.add_scalar("Loss/mel_loss", losses[1], step)
         logger.add_scalar("Loss/mel_postnet_loss", losses[2], step)
         logger.add_scalar("Loss/energy_loss", losses[3], step)
-        logger.add_scalar("Loss/duration_loss", losses[4], step)
+        logger.add_scalar("Loss/kurtosis_loss", losses[4], step)
+        logger.add_scalar("Loss/duration_loss", losses[5], step)
 
     if fig is not None:
         logger.add_figure(tag, fig)
@@ -161,7 +165,6 @@ def get_mask_from_lengths(lengths, max_len=None):
     batch_size = lengths.shape[0]
     if max_len is None:
         max_len = torch.max(lengths).item()
-
     ids = torch.arange(0, max_len).unsqueeze(0).expand(batch_size, -1).to(device)
     mask = ids >= lengths.unsqueeze(1).expand(-1, max_len)
 
@@ -173,60 +176,45 @@ def expand(values, durations):
         out += [value] * max(0, int(d))
     return np.array(out)
 
-def synth_one_sample(targets, predictions, vocoder, model_config, preprocess_config, use_image=True):
-    basename = targets[0][0]
-    data_name = targets[0][0].split("_")[-1]
-    preprocessed_path = preprocess_config["path"]["preprocessed_data_path"]
-    with open(os.path.join(preprocessed_path, "audiotype.json")) as f:
-        audio_map = json.load(f)
-        label = [k for k,v in audio_map.items() if v==targets[1][0].item()][0]
-    # prepare prediction's data
-    src_len = predictions[7][0].item()
-    mel_len = predictions[8][0].item()
-    mel_prediction = predictions[1][0, :mel_len].detach().transpose(0, 1)
-    e_prediction = predictions[2][0]
-    d_prediction = predictions[4][0]
-    # prepare target's data
-    mel_target = targets[5][0, :mel_len].detach().transpose(0, 1)
-    duration = targets[9][0, :src_len].detach().cpu().numpy()
-    energy_break = [duration[0]]
-    for i in range(1,len(duration)-1):
-        energy_break.append(energy_break[i-1]+duration[i])
-    # load image
-    if use_image:
-        assess_p = os.path.join(preprocessed_path, "image_assessment", label, f"{basename}.png")
-        if os.path.exists(assess_p):
-            input_img = cv2.imread(assess_p, cv2.IMREAD_GRAYSCALE)
-        else:
-            image_p = os.path.join(preprocessed_path, "image", "png", label, f"{basename}.png")
-            input_img = cv2.imread(image_p, cv2.IMREAD_GRAYSCALE)
-    
-    if preprocess_config["preprocessing"]["energy"]["feature"] == "element_level":
-        energy = targets[8][0, :src_len].detach().cpu().numpy()
-        energy = expand(energy, duration)
-    else:
-        energy = targets[8][0, :mel_len].detach().cpu().numpy()
 
-    with open(
-        os.path.join(preprocess_config["path"]["preprocessed_data_path"], "stats.json")
-    ) as f:
+def synth_one_sample(targets, predictions, vocoder, model_config, preprocess_config):
+    preprocessed_path = Path(preprocess_config["path"]["preprocessed"])
+    batch_id = np.random.randint(0, len(targets[0]))
+    basename = targets[0][batch_id]
+    dataname = basename.split("_")[-1]
+    with open(preprocessed_path / "audiotype.json") as f:
+        audio_map = json.load(f)
+        label = [k for k,v in audio_map.items() if v==targets[1][batch_id].item()][0]
+    src_len, mel_len = predictions[8][batch_id].item(), predictions[9][batch_id].item()
+    mel_prediction = predictions[1][batch_id, :mel_len].detach().transpose(0, 1)
+    mel_target = targets[5][batch_id, :mel_len].detach().transpose(0, 1)
+    dur_tar = targets[10][batch_id, :src_len].detach().cpu().numpy()
+    step_ = np.insert(np.cumsum(dur_tar), 0, 0)
+    image = targets[11]
+    use_image = False
+    if image is not None:
+        image = cv2.imread(str(preprocessed_path / "image" / "png" / label / f"{basename}.png"), cv2.IMREAD_GRAYSCALE)
+        use_image = True
+    energy = targets[8][0, :src_len].detach().cpu().numpy()
+    energy = expand(energy, dur_tar)
+    with open(preprocessed_path / "stats.json") as f:
         stats = json.load(f)
         stats = stats["energy"][:2]
     if use_image:
         im = plot_mel_withinput(
-            input_img,
+            image,
             [
-                (mel_prediction.cpu().numpy(), energy, energy_break),
-                (mel_target.cpu().numpy(), energy, energy_break)
+                (mel_prediction.cpu().numpy(), energy, step_),
+                (mel_target.cpu().numpy(), energy, step_)
             ],
             stats,
-            [data_name, "Synthetized\nSpectrogram", "Ground-Truth\nSpectrogram"]
+            [dataname, "Synthetized\nSpectrogram", "Ground-Truth\nSpectrogram"]
         )
     else:
         im = plot_mel(
             [
-                (mel_prediction.cpu().numpy(), energy, energy_break),
-                (mel_target.cpu().numpy(), energy, energy_break)
+                (mel_prediction.cpu().numpy(), energy, step_),
+                (mel_target.cpu().numpy(), energy, step_)
             ],
             stats,
             ["Synthetized\nSpectrogram", "Ground-Truth\nSpectrogram"]
@@ -252,6 +240,68 @@ def synth_one_sample(targets, predictions, vocoder, model_config, preprocess_con
 
     return im, wav_reconstruction, wav_prediction, basename
 
+def plot_mel_withinput(input_img, data, stats, titles):
+    # plot visual-text
+    ratio = input_img.shape[1]/input_img.shape[0]
+    fig_width = 1.2*ratio if ratio > 3 else 1.2*3
+    fig, ax = plt.subplots(1,1, figsize=(fig_width,1.5))
+    ax.imshow(np.squeeze(input_img), cmap="gray")
+    ax.set_title(titles[0], fontsize="medium")
+    ax.tick_params(labelsize="x-small", left=False, labelleft=False)
+    buf = io.BytesIO()
+    plt.tight_layout()
+    plt.savefig(buf, format='png')
+    plt.close()
+    enc = np.frombuffer(buf.getvalue(), dtype=np.uint8) # bufferからの読み出し
+    im_visualtext = cv2.imdecode(enc, 1) # デコード
+
+    fig, axes = plt.subplots(1, len(data), squeeze=False, figsize=(fig_width, 3.5))
+    if titles is None:
+        titles = [None for i in range(len(data))]
+    energy_min, energy_max = stats
+
+    def add_axis(fig, old_ax):
+        ax = fig.add_axes(old_ax.get_position(), anchor="W")
+        ax.set_facecolor("None")
+        return ax
+
+    for i in range(0,len(data)):
+        mel, energy, energy_break = data[i]
+        fig_aspect = fig_width/(len(data)*3.5)
+        im_aspect = mel.shape[1]/(fig_aspect*mel.shape[0])
+        axes[0][i].imshow(mel, origin="lower", aspect=im_aspect)
+        axes[0][i].set_ylim(0, mel.shape[0]-1)
+        axes[0][i].set_xlim(0, mel.shape[1]-1)
+        axes[0][i].set_title(titles[i+1], fontsize="medium")
+        axes[0][i].tick_params(labelsize="x-small", left=False, labelleft=False)
+        axes[0][i].set_anchor("W")
+
+        ax2 = add_axis(fig, axes[0][i])
+        ax2.plot(energy, color="violet")
+        ax2.set_xlim(0, mel.shape[1]-1)
+        ax2.set_ylim(energy_min, energy_max)
+        ax2.set_ylabel("Energy", color="darkviolet")
+        ax2.yaxis.set_label_position("right")
+        ax2.tick_params(
+            labelsize="x-small",
+            colors="darkviolet",
+            bottom=False,
+            labelbottom=False,
+            left=False,
+            labelleft=False,
+            right=True,
+            labelright=True,
+        )
+        for bre_point in energy_break:
+            ax2.axvline(x=bre_point, color="violet", alpha=0.5, linestyle=":")
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    plt.close()
+    enc = np.frombuffer(buf.getvalue(), dtype=np.uint8) # bufferからの読み出し
+    im_mel = cv2.imdecode(enc, 1) # デコード
+    im = cv2.vconcat([im_visualtext, im_mel])
+    return im
+
 
 def synth_samples(targets, predictions, vocoder, model_config, preprocess_config, path, show_target=True, image_assessment=None, event_img_stem=''):
     basenames = targets[0]
@@ -271,11 +321,8 @@ def synth_samples(targets, predictions, vocoder, model_config, preprocess_config
         energy_break = [duration[0]]
         for j in range(1,len(duration)-1):
             energy_break.append(energy_break[j-1]+duration[j])    
-        if preprocess_config["preprocessing"]["energy"]["feature"] == "element_level":
-            energy = predictions[2][i, :src_len].detach().cpu().numpy()
-            energy = expand(energy, duration)
-        else:
-            energy = predictions[2][i, :mel_len].detach().cpu().numpy()
+        energy = predictions[2][i, :src_len].detach().cpu().numpy()
+        energy = expand(energy, duration)
         
         if show_target:
             # target
@@ -285,14 +332,11 @@ def synth_samples(targets, predictions, vocoder, model_config, preprocess_config
             energy_break_target = [duration_target[0]]
             for a in range(1,len(duration_target)-1):
                 energy_break_target.append(energy_break_target[a-1]+duration_target[a])
-            if preprocess_config["preprocessing"]["energy"]["feature"] == "element_level":
-                energy_target = targets[8][i, :src_len].detach().cpu().numpy()
-                energy_target = expand(energy_target, duration_target)
-            else:
-                energy_target = targets[8][i, :mel_len_gt].detach().cpu().numpy()
+            energy_target = targets[8][i, :src_len].detach().cpu().numpy()
+            energy_target = expand(energy_target, duration_target)
 
         with open(
-            os.path.join(preprocess_config["path"]["preprocessed_data_path"], "stats.json")
+            os.path.join(preprocess_config["path"]["preprocessed"], "stats.json")
         ) as f:
             stats = json.load(f)
             stats = stats["energy"][:2]
@@ -308,7 +352,7 @@ def synth_samples(targets, predictions, vocoder, model_config, preprocess_config
                 [data_name, "Synthetized\nSpectrogram", "Ground-Truth\nSpectrogram"],
             )
         else:
-            with open( os.path.join(preprocess_config["path"]["preprocessed_data_path"], "audiotype.json")) as f:
+            with open( os.path.join(preprocess_config["path"]["preprocessed"], "audiotype.json")) as f:
                 audio_map = json.load(f)
                 eventlabel = [k for k,v in audio_map.items() if v==targets[1][0]][0]
             im = plot_mel_withinput(
@@ -325,18 +369,18 @@ def synth_samples(targets, predictions, vocoder, model_config, preprocess_config
     from .model import vocoder_infer
 
     mel_predictions = predictions[1].transpose(1, 2)
-    lengths = predictions[8] * preprocess_config["preprocessing"]["stft"]["hop_length"]
+    lengths = predictions[8] * preprocess_config["audio"]["stft"]["hop_length"]
     wav_predictions = vocoder_infer(
         mel_predictions, vocoder, model_config, preprocess_config, lengths=lengths
     )
     STFT = Audio.stft.TacotronSTFT(
-      preprocess_config["preprocessing"]["stft"]["filter_length"],
-      preprocess_config["preprocessing"]["stft"]["hop_length"],
-      preprocess_config["preprocessing"]["stft"]["win_length"],
-      preprocess_config["preprocessing"]["mel"]["n_mel_channels"],
-      preprocess_config["preprocessing"]["audio"]["sampling_rate"],
-      preprocess_config["preprocessing"]["mel"]["mel_fmin"],
-      preprocess_config["preprocessing"]["mel"]["mel_fmax"],
+      preprocess_config["audio"]["stft"]["filter_length"],
+      preprocess_config["audio"]["stft"]["hop_length"],
+      preprocess_config["audio"]["stft"]["win_length"],
+      preprocess_config["audio"]["mel"]["n_mel_channels"],
+      preprocess_config["audio"]["audio"]["sampling_rate"],
+      preprocess_config["audio"]["mel"]["mel_fmin"],
+      preprocess_config["audio"]["mel"]["mel_fmax"],
     )
     # wav_predict_gl = Audio.tools.inv_mel_spec(mel_prediction, f"{basename}.wav", STFT, 500)
     
@@ -347,10 +391,10 @@ def synth_samples(targets, predictions, vocoder, model_config, preprocess_config
                 vocoder,
                 model_config,
                 preprocess_config,
-                lengths=targets[6] * preprocess_config["preprocessing"]["stft"]["hop_length"]
+                lengths=targets[6] * preprocess_config["audio"]["stft"]["hop_length"]
         )
 
-    sampling_rate = preprocess_config["preprocessing"]["audio"]["sampling_rate"]
+    sampling_rate = preprocess_config["audio"]["audio"]["sampling_rate"]
     if show_target:
         for wavp, wavr, basename in zip(wav_predictions, wav_reconstructions, basenames):
             basename = f'{basename}_{event_img_stem}'
@@ -494,68 +538,6 @@ def synth_for_eval_continue(targets, predictions, vocoder, model_config, preproc
         #     f.write(statement)
     return wav_p_len
 
-def plot_mel_withinput(input_img, data, stats, titles):
-    # plot visual-text
-    ratio = input_img.shape[1]/input_img.shape[0]
-    fig_width = 1.2*ratio if ratio > 3 else 1.2*3
-    fig, ax = plt.subplots(1,1, figsize=(fig_width,1.5))
-    ax.imshow(np.squeeze(input_img), cmap="gray")
-    ax.set_title(titles[0], fontsize="medium")
-    ax.tick_params(labelsize="x-small", left=False, labelleft=False)
-    buf = io.BytesIO()
-    plt.tight_layout()
-    plt.savefig(buf, format='png')
-    plt.close()
-    enc = np.frombuffer(buf.getvalue(), dtype=np.uint8) # bufferからの読み出し
-    im_visualtext = cv2.imdecode(enc, 1) # デコード
-
-    fig, axes = plt.subplots(1, len(data), squeeze=False, figsize=(fig_width, 3.5))
-    if titles is None:
-        titles = [None for i in range(len(data))]
-    energy_min, energy_max = stats
-
-    def add_axis(fig, old_ax):
-        ax = fig.add_axes(old_ax.get_position(), anchor="W")
-        ax.set_facecolor("None")
-        return ax
-
-    for i in range(0,len(data)):
-        mel, energy, energy_break = data[i]
-        fig_aspect = fig_width/(len(data)*3.5)
-        im_aspect = mel.shape[1]/(fig_aspect*mel.shape[0])
-        axes[0][i].imshow(mel, origin="lower", aspect=im_aspect)
-        axes[0][i].set_ylim(0, mel.shape[0]-1)
-        axes[0][i].set_xlim(0, mel.shape[1]-1)
-        axes[0][i].set_title(titles[i+1], fontsize="medium")
-        axes[0][i].tick_params(labelsize="x-small", left=False, labelleft=False)
-        axes[0][i].set_anchor("W")
-
-        ax2 = add_axis(fig, axes[0][i])
-        ax2.plot(energy, color="violet")
-        ax2.set_xlim(0, mel.shape[1]-1)
-        ax2.set_ylim(energy_min, energy_max)
-        ax2.set_ylabel("Energy", color="darkviolet")
-        ax2.yaxis.set_label_position("right")
-        ax2.tick_params(
-            labelsize="x-small",
-            colors="darkviolet",
-            bottom=False,
-            labelbottom=False,
-            left=False,
-            labelleft=False,
-            right=True,
-            labelright=True,
-        )
-        for bre_point in energy_break:
-            ax2.axvline(x=bre_point, color="violet", alpha=0.5, linestyle=":")
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png')
-    plt.close()
-    enc = np.frombuffer(buf.getvalue(), dtype=np.uint8) # bufferからの読み出し
-    im_mel = cv2.imdecode(enc, 1) # デコード
-    im = cv2.vconcat([im_visualtext, im_mel])
-    return im
-
 def plot_mel(data, stats, titles):
     fig, axes = plt.subplots(1, len(data), squeeze=False)
     if titles is None:
@@ -632,18 +614,24 @@ def pad_2D(inputs, maxlen=None):
 
     return output
 
-def pad_2D_gray_image(inputs):
-    def pad(x, max_len):
-        PAD = 0
-        s = np.shape(x)[0]
+def pad_2D_gray_image(inputs, width, stride):
+    def pad_align(x, max_len):
+        PAD = 255
         x_padded = np.pad(
             x, [(0,0),(0, max_len - np.shape(x)[1])], mode="constant", constant_values=PAD
         )
-        return x_padded[:s,:]
-    
+        return x_padded
+    def pad_margin(x, each_padlen):
+        PAD = 255
+        x_padded = np.pad(
+            x, [(0,0),(each_padlen, each_padlen)], mode="constant", constant_values=PAD
+        )
+        return x_padded
     max_len = max(np.shape(x)[1] for x in inputs)
-    output = np.stack([pad(x, max_len) for x in inputs])
-
+    output = np.stack([pad_align(x, max_len) for x in inputs])
+    each_padlen = (stride//2)*width
+    output = np.stack([pad_margin(x, each_padlen) for x in output])
+    aa = output[0]
     return output
 
 def pad_2D_image(inputs):
@@ -677,8 +665,7 @@ def pad_2D_image(inputs):
     #     pickle.dump(output, f)
     # print("debug")
     return output
-
-    
+   
 def pad(input_ele, mel_max_length=None):
     if mel_max_length:
         max_len = mel_max_length

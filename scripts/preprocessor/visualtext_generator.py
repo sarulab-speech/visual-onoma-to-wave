@@ -4,44 +4,13 @@ from PIL import Image, ImageDraw, ImageFont
 
 class Generator:
     def _config_open(self, config_dict):
-        self.path_corpus = Path(config_dict["path"]["corpus_data_path"])
-        self.path_formatted = Path(config_dict["path"]["formatted_data_path"])
-        self.path_preprocessed = Path(config_dict["path"]["preprocessed_data_path"])
-        self.path_font = Path(config_dict["path"]["font_path"])
-
-        self.p_uselabel = config_dict["preprocessing"]["extract_label"]
-        self.p_untrained_dataid = config_dict["preprocessing"]["notuse_train_audio_num"]
-        self.p_inputtype = config_dict["preprocessing"]["input_type"]
-        self.p_confidence_score_border = config_dict["preprocessing"]["confidence_score_border"]
-        self.p_acceptance_score_border = config_dict["preprocessing"]["acceptance_score_border"]
-
-        self.aug_maxlen = config_dict["preprocessing"]["augmentation"]["augment_maxlen"]
-        self.aug_repeatnum = config_dict["preprocessing"]["augmentation"]["augment_repeatnum"]
-        self.aug_chara_consecutive_num = config_dict["preprocessing"]["augmentation"]["chara_consecutive_num"]
-        self.aug_first_consecutive = config_dict["preprocessing"]["augmentation"]["first_consecutive"]
-
-        self.im_fontsize = config_dict["preprocessing"]["text"]["font_size"]
-        self.im_is_stretching = config_dict["preprocessing"]["image"]["image_stretching"]
-        self.im_bgcolor = tuple(config_dict["preprocessing"]["image"]["background_color"])
-        self.im_txtcolor = tuple(config_dict["preprocessing"]["image"]["text_color"])
-        self.im_padcolor = config_dict["preprocessing"]["image"]["pad_color"]
-        self.im_loadscale = config_dict["preprocessing"]["image"]["load_scale"]
-
-        self.sampling_rate = config_dict["preprocessing"]["audio"]["sampling_rate"]
-        self.max_wav_value = config_dict["preprocessing"]["audio"]["max_wav_value"]
-        self.filter_length = config_dict["preprocessing"]["stft"]["filter_length"]
-        self.hop_length = config_dict["preprocessing"]["stft"]["hop_length"]
-        self.win_length = config_dict["preprocessing"]["stft"]["win_length"]
-        self.margin_frame = config_dict["preprocessing"]["stft"]["margin_frame"]
-        self.n_mel_channels = config_dict["preprocessing"]["mel"]["n_mel_channels"]
-        self.mel_fmin = config_dict["preprocessing"]["mel"]["mel_fmin"]
-        self.mel_fmax = config_dict["preprocessing"]["mel"]["mel_fmax"]
-
-        self.energy_feature = config_dict["preprocessing"]["energy"]["feature"]
-        self.energy_character_averaging = (
-            self.energy_feature == "element_level"
-        )
-        self.energy_normalization = config_dict["preprocessing"]["energy"]["normalization"]
+        self.path_font = Path(config_dict["path"]["font"])
+        self.im_fontsize = config_dict["visual_text"]["fontsize"]
+        self.im_is_stretching = config_dict["visual_text"]["image_stretching"]
+        self.im_bgcolor = tuple(config_dict["visual_text"]["color"]["background"])
+        self.im_txtcolor = tuple(config_dict["visual_text"]["color"]["text"])
+        self.im_padcolor = tuple(config_dict["visual_text"]["color"]["pad"])
+        self.im_loadscale = config_dict["visual_text"]["scale_in_training"]
 
     def __init__(self, config, chara_persec, max_width):
         self._config_open(config)
